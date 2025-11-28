@@ -1,7 +1,13 @@
 package mta.patmal.enigma.engine;
 
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.Unmarshaller;
+import mta.patmal.enigma.engine.jaxb.generated.BTEEnigma;
+import mta.patmal.enigma.engine.loader.JaxbLoader;
+import mta.patmal.enigma.engine.loader.XmlLoader;
 import mta.patmal.enigma.machine.component.machine.Machine;
-//import javax.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.Unmarshaller;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -9,21 +15,19 @@ import java.io.FileNotFoundException;
 public class EngineImpl implements Engine{
 
     private Machine machine;
-    // private LoadManager loadManager;
+    private XmlLoader xmlLoader = new XmlLoader(); // need to put in constructor
     // private StatisticsManager statisticsManager;
     // private Repository repository; why not machine?
 
     @Override
-    public void loadXml(String path) {
-//        File xmlFile = new File(path);
-//        if (!xmlFile.exists()) {
-//            throw new FileNotFoundException("XML file not found: " + path);
-//        }
-//
-//        JAXBContext jaxbContext = JAXBContext.newInstance(/*class*/);
-//        Marshaller jaxbMarshaller = jaxbContext.createMarshaller();
-//
-
+    public void loadXml(String path) { // change function name and decide if returning machine or changing in function
+        System.out.println("Loading XML file...");
+        try {
+            this.machine = xmlLoader.loadMachineFromXml(path);
+        } catch (Exception e) { // need to narrow down
+            e.printStackTrace();
+        }
+        System.out.println("XML file loaded successfully!");
     }
 
     @Override
