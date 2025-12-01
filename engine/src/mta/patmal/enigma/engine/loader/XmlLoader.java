@@ -8,21 +8,18 @@ import java.io.File;
 import java.io.FileNotFoundException;
 
 public class XmlLoader {
-    private static final JaxbLoader jaxbLoader = new JaxbLoader(); // final?
-    JaxbTranslator jaxbTranslator = new JaxbTranslator();
+    private static final JaxbLoader jaxbLoader = new JaxbLoader();
+    private final JaxbTranslator jaxbTranslator = new JaxbTranslator();
+    private final XmlValidator xmlValidator = new XmlValidator();
 
-    public Machine loadMachineFromXml(String xmlPath) throws FileNotFoundException, JAXBException{ // add more exceptions
-        try {
-            validateXmlPath(xmlPath);
-            File xmlFile = new File(xmlPath);
-            validateXmlFile(xmlFile);
-            BTEEnigma bteEnigma = jaxbLoader.loadXmlUsingJaxb(xmlFile);
-            jaxbTranslator.validateMachineFormat(bteEnigma);
-            Machine enigmaMachine = jaxbTranslator.translateToMachine(bteEnigma);
-            return enigmaMachine;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        } // add more exceptions
+    public Machine loadMachineFromXml(String xmlPath) throws FileNotFoundException, JAXBException, IllegalArgumentException, IllegalStateException {
+        validateXmlPath(xmlPath);
+        File xmlFile = new File(xmlPath);
+        validateXmlFile(xmlFile);
+        BTEEnigma bteEnigma = jaxbLoader.loadXmlUsingJaxb(xmlFile);
+        xmlValidator.validateMachineFormat(bteEnigma);
+        Machine enigmaMachine = jaxbTranslator.translateToMachine(bteEnigma);
+        return enigmaMachine;
     }
 
     private void validateXmlPath(String xmlPath) throws FileNotFoundException{
