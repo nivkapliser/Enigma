@@ -15,12 +15,12 @@ import java.io.FileNotFoundException;
 public class EngineImpl implements Engine{
 
     private Machine machine;
-    private XmlLoader xmlLoader = new XmlLoader(); // need to put in constructor
+    private final XmlLoader xmlLoader = new XmlLoader();
     // private StatisticsManager statisticsManager;
     // private Repository repository; why not machine?
 
     @Override
-    public void loadXml(String path) { // change function name and decide if returning machine or changing in function
+    public void loadXml(String path) {
         System.out.println("Loading XML file...");
         try {
             this.machine = xmlLoader.loadMachineFromXml(path);
