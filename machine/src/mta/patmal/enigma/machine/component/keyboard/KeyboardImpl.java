@@ -1,6 +1,6 @@
 package mta.patmal.enigma.machine.component.keyboard;
 
-public class KeyboardImpl {
+public class KeyboardImpl implements Keyboard {
     private final String alphabet;
     public KeyboardImpl(String alphabet) {
         if (alphabet == null || alphabet.isEmpty()) {

@@ -4,8 +4,8 @@ import mta.patmal.enigma.machine.component.rotor.Rotor;
 import java.util.List;
 
 public class CodeImpl implements Code{
-    private final List<Rotor> rotors;       // 0 = ימני, 1 = אמצעי, 2 = שמאלי
-    private final List<Integer> positions;  // מיקומים התחלתיים לכל רוטור
+    private final List<Rotor> rotors;
+    private final List<Integer> positions;
     private final Reflector reflector;
 
     public CodeImpl(List<Rotor> rotors,
