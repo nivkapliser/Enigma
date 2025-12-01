@@ -7,6 +7,10 @@ import java.util.List;
 import java.util.Set;
 
 public class XmlValidator {
+    private static final int MIN_REQUIRED_ROTORS = 3;
+    private static final int MIN_ROTOR_ID = 1;
+    private static final int MIN_REFLECTOR_ID = 1;
+    private static final int MAX_REFLECTOR_ID = 5;
 
     public void validateMachineFormat(BTEEnigma xmlEnigma) {
         if (xmlEnigma == null) {
@@ -34,37 +38,54 @@ public class XmlValidator {
 
     private void validateRotors(BTEEnigma bteEnigma) {
         List<BTERotor> rotors = bteEnigma.getBTERotors().getBTERotor();
+        int abcSize = getAbcSize(bteEnigma);
+
+        validateRotorCount(rotors);
+        validateRotorIds(rotors, abcSize);
+    }
+
+    private int getAbcSize(BTEEnigma bteEnigma) {
         String abc = bteEnigma.getABC();
         if (abc == null || abc.trim().isEmpty()) {
             throw new IllegalStateException("Cannot validate rotors: ABC is null or empty");
         }
-        int abcSize = abc.trim().length();
+        return abc.trim().length();
+    }
 
-        if (rotors == null || rotors.size() < 3) {
-            throw new IllegalStateException("At least 3 rotors are required, got: " + 
+    private void validateRotorCount(List<BTERotor> rotors) {
+        if (rotors == null || rotors.size() < MIN_REQUIRED_ROTORS) {
+            throw new IllegalStateException("At least " + MIN_REQUIRED_ROTORS + " rotors are required, got: " + 
                     (rotors == null ? 0 : rotors.size()));
         }
+    }
 
+    private void validateRotorIds(List<BTERotor> rotors, int abcSize) {
         Set<Integer> ids = new HashSet<>();
         int minId = Integer.MAX_VALUE;
         int maxId = Integer.MIN_VALUE;
 
         for (BTERotor rotor : rotors) {
             int id = rotor.getId();
-            if (!ids.add(id)) {
-                throw new IllegalArgumentException("Duplicate rotor id: " + id);
-            }
+            validateUniqueRotorId(ids, id);
             minId = Math.min(minId, id);
             maxId = Math.max(maxId, id);
-
             validateSingleRotorMappings(rotor, abcSize);
             validateNotch(rotor, abcSize);
         }
         
-        if (minId != 1) {
-            throw new IllegalArgumentException("Rotor ids must start from 1, minimal id is " + minId);
-        }
+        validateRotorIdSequence(minId, maxId, ids);
+    }
 
+    private void validateUniqueRotorId(Set<Integer> ids, int id) {
+        if (!ids.add(id)) {
+            throw new IllegalArgumentException("Duplicate rotor id: " + id);
+        }
+    }
+
+    private void validateRotorIdSequence(int minId, int maxId, Set<Integer> ids) {
+        if (minId != MIN_ROTOR_ID) {
+            throw new IllegalArgumentException("Rotor ids must start from " + MIN_ROTOR_ID + ", minimal id is " + minId);
+        }
         if (ids.size() != maxId) {
             throw new IllegalArgumentException("Rotor ids must form a continuous sequence 1.." + maxId + 
                     ", but got: " + ids);
@@ -77,42 +98,52 @@ public class XmlValidator {
             throw new IllegalStateException("Rotor " + rotor.getId() + " has no mappings");
         }
 
-        Set<Character> leftSet = new HashSet<>();
-        Set<Character> rightSet = new HashSet<>();
+        Set<Character> leftChars = new HashSet<>();
+        Set<Character> rightChars = new HashSet<>();
 
-        for (BTEPositioning pos : mappings) {
-            String leftStr = pos.getLeft();
-            String rightStr = pos.getRight();
-
-            if (leftStr == null || rightStr == null || leftStr.length() != 1 || rightStr.length() != 1) {
-                throw new IllegalArgumentException("Rotor " + rotor.getId() + 
-                        " has invalid mapping (left/right must be single letters): left=" + leftStr + ", right=" + rightStr);
-            }
-
-            char left = leftStr.charAt(0);
-            char right = rightStr.charAt(0);
-
-            if (!leftSet.add(left)) {
-                throw new IllegalArgumentException("Rotor " + rotor.getId() + 
-                        " has duplicate mapping for LEFT letter: " + left);
-            }
-            if (!rightSet.add(right)) {
-                throw new IllegalArgumentException("Rotor " + rotor.getId() + 
-                        " has duplicate mapping for RIGHT letter: " + right);
-            }
+        for (BTEPositioning positioning : mappings) {
+            validatePositioningFormat(rotor.getId(), positioning);
+            char left = positioning.getLeft().charAt(0);
+            char right = positioning.getRight().charAt(0);
+            validateUniqueMappingChars(rotor.getId(), leftChars, rightChars, left, right);
         }
 
-        if (mappings.size() != abcSize) {
-            throw new IllegalArgumentException("Rotor " + rotor.getId() + 
-                    " mapping count (" + mappings.size() + ") does not match ABC size (" + abcSize + ")");
+        validateMappingCount(rotor.getId(), mappings.size(), abcSize);
+    }
+
+    private void validatePositioningFormat(int rotorId, BTEPositioning positioning) {
+        String left = positioning.getLeft();
+        String right = positioning.getRight();
+        if (left == null || right == null || left.length() != 1 || right.length() != 1) {
+            throw new IllegalArgumentException("Rotor " + rotorId + 
+                    " has invalid mapping (left/right must be single letters): left=" + left + ", right=" + right);
+        }
+    }
+
+    private void validateUniqueMappingChars(int rotorId, Set<Character> leftChars, Set<Character> rightChars, 
+                                           char left, char right) {
+        if (!leftChars.add(left)) {
+            throw new IllegalArgumentException("Rotor " + rotorId + 
+                    " has duplicate mapping for LEFT letter: " + left);
+        }
+        if (!rightChars.add(right)) {
+            throw new IllegalArgumentException("Rotor " + rotorId + 
+                    " has duplicate mapping for RIGHT letter: " + right);
+        }
+    }
+
+    private void validateMappingCount(int rotorId, int mappingCount, int abcSize) {
+        if (mappingCount != abcSize) {
+            throw new IllegalArgumentException("Rotor " + rotorId + 
+                    " mapping count (" + mappingCount + ") does not match ABC size (" + abcSize + ")");
         }
     }
 
     private void validateNotch(BTERotor rotor, int abcSize) {
         int notch = rotor.getNotch();
-        if (notch < 1 || notch > abcSize) {
+        if (notch < MIN_ROTOR_ID || notch > abcSize) {
             throw new IllegalArgumentException("Rotor " + rotor.getId() + 
-                    " notch (" + notch + ") is out of range 1.." + abcSize);
+                    " notch (" + notch + ") is out of range " + MIN_ROTOR_ID + ".." + abcSize);
         }
     }
 
@@ -126,28 +157,36 @@ public class XmlValidator {
         int maxId = Integer.MIN_VALUE;
 
         for (BTEReflector reflector : reflectors) {
-            String romanId = reflector.getId();
-            int numericId;
-            try {
-                numericId = RomanNumeralUtils.romanToInt(romanId);
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Reflector id must be in range I..V, got: " + romanId, e);
-            }
-
-            if (numericId < 1 || numericId > 5) {
-                throw new IllegalArgumentException("Reflector id must be in range I..V, got: " + romanId + " (=" + numericId + ")");
-            }
-
-            if (!ids.add(numericId)) {
-                throw new IllegalArgumentException("Duplicate reflector id: " + romanId + " (=" + numericId + ")");
-            }
-
+            int numericId = parseAndValidateReflectorId(reflector.getId());
+            validateUniqueReflectorId(ids, reflector.getId(), numericId);
             maxId = Math.max(maxId, numericId);
-
             validateSingleReflectorMappings(reflector);
         }
 
-        for (int i = 1; i <= maxId; i++) {
+        validateReflectorIdSequence(ids, maxId);
+    }
+
+    private int parseAndValidateReflectorId(String romanId) {
+        int numericId;
+        try {
+            numericId = RomanNumeralUtils.romanToInt(romanId);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Reflector id must be in range I..V, got: " + romanId, e);
+        }
+        if (numericId < MIN_REFLECTOR_ID || numericId > MAX_REFLECTOR_ID) {
+            throw new IllegalArgumentException("Reflector id must be in range I..V, got: " + romanId + " (=" + numericId + ")");
+        }
+        return numericId;
+    }
+
+    private void validateUniqueReflectorId(Set<Integer> ids, String romanId, int numericId) {
+        if (!ids.add(numericId)) {
+            throw new IllegalArgumentException("Duplicate reflector id: " + romanId + " (=" + numericId + ")");
+        }
+    }
+
+    private void validateReflectorIdSequence(Set<Integer> ids, int maxId) {
+        for (int i = MIN_REFLECTOR_ID; i <= maxId; i++) {
             if (!ids.contains(i)) {
                 throw new IllegalArgumentException("Reflector ids must form a continuous roman sequence from I to " +
                         RomanNumeralUtils.intToRoman(maxId) + ", missing: " + RomanNumeralUtils.intToRoman(i));
