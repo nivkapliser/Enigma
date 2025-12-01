@@ -38,7 +38,7 @@ public class XmlValidator {
         if (abc == null || abc.trim().isEmpty()) {
             throw new IllegalStateException("Cannot validate rotors: ABC is null or empty");
         }
-        int abcSize = abc.length();
+        int abcSize = abc.trim().length();
 
         if (rotors == null || rotors.size() < 3) {
             throw new IllegalStateException("At least 3 rotors are required, got: " + 

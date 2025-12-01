@@ -47,7 +47,8 @@ public class ConsoleUI {
         switch (input) {
             case 1: // Load XML
                 System.out.print("Enter XML file path: ");
-                String path = System.console().readLine();
+                Scanner scanner = new Scanner(System.in);
+                String path = scanner.nextLine();
                 engine.loadXml(path);
                 break;
 
