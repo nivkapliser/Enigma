@@ -9,6 +9,4 @@ public interface Code {
     List<Rotor> getRotors();
     List<Integer> getPositions();
     Reflector getReflector();
-
-
 }

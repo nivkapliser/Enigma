@@ -12,10 +12,10 @@ public class RotorImpl implements Rotor {
 
     public RotorImpl(
             int id,
-            Map<Integer, Integer> forwardWiring,
-            Map<Integer, Integer> backwardWiring,
+            final Map<Integer, Integer> forwardWiring,
+            final Map<Integer, Integer> backwardWiring,
             int position,
-            int notch,
+            final int notch,
             int ringSetting
     ) {
         this.id = id;
@@ -47,4 +47,13 @@ public class RotorImpl implements Rotor {
         return reachedNotch;
     }
 
+    @Override
+    public int getPosition() {
+        return position;
+    }
+    @Override
+    public void setPosition(int position) {
+        int size = forwardWiring.size();
+        this.position = Math.floorMod(position, size);
+        }
 }

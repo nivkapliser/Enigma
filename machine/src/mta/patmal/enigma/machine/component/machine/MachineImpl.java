@@ -17,6 +17,12 @@ public class MachineImpl implements Machine{
     @Override
     public void setCode(Code code) {
         this.code = code;
+        List<Rotor> rotors = code.getRotors();
+        List<Integer> positions = code.getPositions();
+
+        for (int i = 0; i < rotors.size(); i++) {
+            rotors.get(i).setPosition(positions.get(i));
+        }
     }
 
     @Override
