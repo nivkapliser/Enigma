@@ -3,12 +3,12 @@ package mta.patmal.enigma.machine.component.rotor;
 import java.util.Map;
 
 public class RotorImpl implements Rotor {
-    private int id;
-    private Map<Integer, Integer> forwardWiring;
-    private Map<Integer, Integer> backwardWiring;
+    private final int id;
+    private final Map<Integer, Integer> forwardWiring;
+    private final Map<Integer, Integer> backwardWiring;
     private int position;
-    private int notch;
-    private int ringSetting;
+    private final int notch;
+    private final int ringSetting;
 
     public RotorImpl(
             int id,
@@ -55,5 +55,15 @@ public class RotorImpl implements Rotor {
     public void setPosition(int position) {
         int size = forwardWiring.size();
         this.position = Math.floorMod(position, size);
-        }
+    }
+
+    @Override
+    public int getId() {
+        return id;
+    }
+
+    @Override
+    public int getNotch() {
+        return notch;
+    }
 }

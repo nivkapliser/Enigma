@@ -1,5 +1,6 @@
 package mta.patmal.enigma.console;
 
+import mta.patmal.enigma.dto.MachineData;
 import mta.patmal.enigma.engine.Engine;
 
 import java.util.Scanner;
@@ -46,14 +47,17 @@ public class ConsoleUI {
     public void processUserInput(int input) {
         switch (input) {
             case 1: // Load XML
+                // will be a class handling this?
                 System.out.print("Enter XML file path: ");
                 Scanner scanner = new Scanner(System.in);
                 String path = scanner.nextLine();
+                System.out.println("Loading XML file...");
                 engine.loadXml(path);
                 break;
 
             case 2: // Show Machine Data
                 engine.showMachineData();
+                showMachineData();
                 break;
 
             case 3: // Code Manual
@@ -87,6 +91,21 @@ public class ConsoleUI {
 
             default:
                 System.out.println("Invalid option. Make sure you enter a number between 1 and 8.\n Please try again.");
+        }
+    }
+
+    private void showMachineData(){
+        MachineData machineData = engine.showMachineData();
+        System.out.println("Machine specification:");
+        System.out.println("Total rotors: " + machineData.getTotalRotors());
+        System.out.println("Total reflectors: " + machineData.getTotalReflectors());
+        System.out.println("Messages processed since last load: " + machineData.getMessagesProcessed());
+
+        if (machineData.getOriginalCode() != null) {
+            System.out.println("Original code configuration: " + machineData.getOriginalCode());
+            System.out.println("Current code configuration: " + machineData.getCurrentCode());
+        } else {
+            System.out.println("No code configured.");
         }
     }
 }

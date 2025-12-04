@@ -9,6 +9,7 @@ public class KeyboardImpl implements Keyboard {
         }
         this.alphabet = alphabet;
     }
+    @Override
     public int processChar(char input) {
         int index = alphabet.indexOf(input);
         if (index == -1) {
@@ -16,10 +17,16 @@ public class KeyboardImpl implements Keyboard {
         }
         return index;
     }
+    @Override
     public char lightALamp(int input) {
         if (input < 0 || input >= alphabet.length()) {
             throw new IllegalArgumentException("Input index out of bounds");
         }
         return alphabet.charAt(input);
+    }
+
+    @Override
+    public int getAlphabetSize() {
+        return alphabet.length();
     }
 }

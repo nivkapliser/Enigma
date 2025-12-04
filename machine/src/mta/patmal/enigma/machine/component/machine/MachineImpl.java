@@ -46,6 +46,19 @@ public class MachineImpl implements Machine{
         return result;
     }
 
+    @Override
+    public Code getCode() {
+        return code;
+    }
+
+    public char indexToChar(int index) {
+        return keyboard.lightALamp(index);
+    }
+
+    public int getAlphabetSize() {
+        return keyboard.getAlphabetSize();
+    }
+
     private int backwardTransform(List<Rotor> rotors, int intermediate) {
         for (int i = rotors.size()-1; i >= 0; i--) {
             intermediate = rotors.get(i).process(intermediate, Direction.BACKWARD);
