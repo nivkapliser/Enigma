@@ -3,6 +3,8 @@ package mta.patmal.enigma.engine.loader;
 import jakarta.xml.bind.JAXBException;
 import mta.patmal.enigma.engine.jaxb.generated.BTEEnigma;
 import mta.patmal.enigma.machine.component.machine.Machine;
+import mta.patmal.enigma.machine.component.reflector.Reflector;
+import mta.patmal.enigma.machine.component.rotor.Rotor;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -32,7 +34,7 @@ public class XmlLoader {
         BTEEnigma bteEnigma = jaxbLoader.load(xmlFile);
         xmlValidator.validateMachineFormat(bteEnigma);
         this.lastLoadedEnigma = bteEnigma;
-        return jaxbTranslator.translateToMachine(bteEnigma);
+        return jaxbTranslator.createMachineWithoutCode(bteEnigma);
     }
 
     public int getTotalRotorCount() {
@@ -47,6 +49,31 @@ public class XmlLoader {
             return 0;
         }
         return lastLoadedEnigma.getBTEReflectors().getBTEReflector().size();
+    }
+
+    public BTEEnigma getLastLoadedEnigma() {
+        return lastLoadedEnigma;
+    }
+
+    public String getABC() {
+        if (lastLoadedEnigma == null || lastLoadedEnigma.getABC() == null) {
+            return null;
+        }
+        return lastLoadedEnigma.getABC().trim();
+    }
+
+    public Rotor createRotorById(int rotorId) {
+        if (lastLoadedEnigma == null) {
+            throw new IllegalStateException("No XML file has been loaded");
+        }
+        return jaxbTranslator.createRotorById(lastLoadedEnigma, rotorId);
+    }
+
+    public Reflector createReflectorByNumericId(int numericId) {
+        if (lastLoadedEnigma == null) {
+            throw new IllegalStateException("No XML file has been loaded");
+        }
+        return jaxbTranslator.createReflectorByNumericId(lastLoadedEnigma, numericId);
     }
 
     private void validateXmlPath(String xmlPath) throws FileNotFoundException {

@@ -37,6 +37,12 @@ public class JaxbTranslator {
         
         return assembleMachine(keyboard, selectedRotors, initialPositions, selectedReflector);
     }
+
+    public Machine createMachineWithoutCode(BTEEnigma enigma) {
+        String abc = enigma.getABC().trim();
+        Keyboard keyboard = createKeyboard(abc);
+        return new MachineImpl(keyboard);
+    }
     
     private Keyboard createKeyboard(String abc) {
         return new KeyboardImpl(abc);
@@ -77,12 +83,26 @@ public class JaxbTranslator {
     private List<Rotor> createRotors(List<BTERotor> bteRotors, String abc) {
         List<Rotor> rotors = new ArrayList<>();
         for (BTERotor bteRotor : bteRotors) {
-            RotorWiring wiring = buildRotorWiring(bteRotor, abc);
-            int notch = convertNotchToZeroBased(bteRotor.getNotch());
-            Rotor rotor = createRotor(bteRotor.getId(), wiring, notch);
+            Rotor rotor = createRotorFromBte(bteRotor, abc);
             rotors.add(rotor);
         }
         return rotors;
+    }
+
+    public Rotor createRotorFromBte(BTERotor bteRotor, String abc) {
+        RotorWiring wiring = buildRotorWiring(bteRotor, abc);
+        int notch = convertNotchToZeroBased(bteRotor.getNotch());
+        return createRotor(bteRotor.getId(), wiring, notch);
+    }
+
+    public Rotor createRotorById(BTEEnigma enigma, int rotorId) {
+        String abc = enigma.getABC().trim();
+        List<BTERotor> bteRotors = enigma.getBTERotors().getBTERotor();
+        BTERotor bteRotor = bteRotors.stream()
+                .filter(r -> r.getId() == rotorId)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Rotor with ID " + rotorId + " not found"));
+        return createRotorFromBte(bteRotor, abc);
     }
     
     private RotorWiring buildRotorWiring(BTERotor bteRotor, String abc) {
@@ -137,6 +157,24 @@ public class JaxbTranslator {
         Map<Integer, Integer> wiring = buildReflectorWiring(bteReflector);
         int id = RomanNumeralUtils.romanToInt(bteReflector.getId());
         return new ReflectorImpl(id, wiring);
+    }
+
+    public Reflector createReflectorFromBte(BTEReflector bteReflector) {
+        return createReflector(bteReflector);
+    }
+
+    public Reflector createReflectorByRomanId(BTEEnigma enigma, String romanId) {
+        List<BTEReflector> bteReflectors = enigma.getBTEReflectors().getBTEReflector();
+        BTEReflector bteReflector = bteReflectors.stream()
+                .filter(r -> r.getId().equals(romanId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Reflector with ID " + romanId + " not found"));
+        return createReflectorFromBte(bteReflector);
+    }
+
+    public Reflector createReflectorByNumericId(BTEEnigma enigma, int numericId) {
+        String romanId = RomanNumeralUtils.intToRoman(numericId);
+        return createReflectorByRomanId(enigma, romanId);
     }
     
     private Map<Integer, Integer> buildReflectorWiring(BTEReflector bteReflector) {
