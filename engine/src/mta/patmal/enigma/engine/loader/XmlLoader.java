@@ -9,7 +9,8 @@ import java.io.FileNotFoundException;
 
 public class XmlLoader {
     private static final String XML_FILE_EXTENSION = ".xml";
-    
+
+    private BTEEnigma lastLoadedEnigma;
     private final JaxbLoader jaxbLoader;
     private final JaxbTranslator jaxbTranslator;
     private final XmlValidator xmlValidator;
@@ -30,7 +31,22 @@ public class XmlLoader {
         validateXmlFile(xmlFile);
         BTEEnigma bteEnigma = jaxbLoader.load(xmlFile);
         xmlValidator.validateMachineFormat(bteEnigma);
+        this.lastLoadedEnigma = bteEnigma;
         return jaxbTranslator.translateToMachine(bteEnigma);
+    }
+
+    public int getTotalRotorCount() {
+        if (lastLoadedEnigma == null || lastLoadedEnigma.getBTERotors() == null) {
+            return 0;
+        }
+        return lastLoadedEnigma.getBTERotors().getBTERotor().size();
+    }
+
+    public int getTotalReflectorCount() {
+        if (lastLoadedEnigma == null || lastLoadedEnigma.getBTEReflectors() == null) {
+            return 0;
+        }
+        return lastLoadedEnigma.getBTEReflectors().getBTEReflector().size();
     }
 
     private void validateXmlPath(String xmlPath) throws FileNotFoundException {

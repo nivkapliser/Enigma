@@ -11,6 +11,7 @@ import mta.patmal.enigma.machine.component.reflector.Reflector;
 import mta.patmal.enigma.machine.component.reflector.ReflectorImpl;
 import mta.patmal.enigma.machine.component.rotor.Rotor;
 import mta.patmal.enigma.machine.component.rotor.RotorImpl;
+import mta.patmal.enigma.engine.loader.RomanNumeralUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -134,7 +135,8 @@ public class JaxbTranslator {
     
     private Reflector createReflector(BTEReflector bteReflector) {
         Map<Integer, Integer> wiring = buildReflectorWiring(bteReflector);
-        return new ReflectorImpl(wiring);
+        int id = RomanNumeralUtils.romanToInt(bteReflector.getId());
+        return new ReflectorImpl(id, wiring);
     }
     
     private Map<Integer, Integer> buildReflectorWiring(BTEReflector bteReflector) {
