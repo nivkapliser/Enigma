@@ -17,7 +17,7 @@ public class EngineImpl implements Engine{
     private int totalRotors;
     private int totalReflectors;
     private int messagesProcessed;
-    private Code originalCode;
+    private String originalCodeString;
     private String abc;
     // private StatisticsManager statisticsManager;
     // private Repository repository; why not machine?
@@ -31,7 +31,7 @@ public class EngineImpl implements Engine{
             this.messagesProcessed = 0;
             this.abc = xmlLoader.getABC();
             // Machine is created without code - code will be set later by user
-            this.originalCode = null;
+            this.originalCodeString = null;
         } catch (Exception e) { // need to narrow down
             e.printStackTrace();
         }
@@ -54,7 +54,7 @@ public class EngineImpl implements Engine{
             return null;
         }
 
-        return dataFormatter.createMachineData(machineImpl, originalCode, 
+        return dataFormatter.createMachineData(machineImpl, originalCodeString, 
                 totalRotors, totalReflectors, messagesProcessed);
     }
 
@@ -67,11 +67,13 @@ public class EngineImpl implements Engine{
 
         ManualCodeConfigurator configurator = new ManualCodeConfigurator(
                 machine, xmlLoader, abc, totalRotors, totalReflectors);
+
         boolean success = configurator.configure();
         
         // Set originalCode the first time a code is successfully configured
-        if (success && originalCode == null && machine instanceof MachineImpl) {
-            this.originalCode = ((MachineImpl) machine).getCode();
+        if (success && originalCodeString == null && machine instanceof MachineImpl) {
+            this.originalCodeString = dataFormatter.formatCode(
+                ((MachineImpl) machine).getCode(), (MachineImpl) machine);
         }
     }
 
@@ -87,13 +89,39 @@ public class EngineImpl implements Engine{
         boolean success = configurator.configure();
         
         // Set originalCode the first time a code is successfully configured
-        if (success && originalCode == null && machine instanceof MachineImpl) {
-            this.originalCode = ((MachineImpl) machine).getCode();
+        if (success && originalCodeString == null && machine instanceof MachineImpl) {
+            this.originalCodeString = dataFormatter.formatCode(
+                ((MachineImpl) machine).getCode(), (MachineImpl) machine);
         }
     }
 
     @Override
     public String process(String input) {
+        // Validate machine is loaded
+        if (machine == null) {
+            throw new IllegalStateException("No machine loaded. Please load an XML file first (command 1).");
+        }
+
+        // Validate code is configured
+        if (originalCodeString == null) {
+            throw new IllegalStateException("No code configured. Please configure a code first (command 3 or 4).");
+        }
+
+        // Validate input is not null or empty
+        if (input == null || input.isEmpty()) {
+            throw new IllegalArgumentException("Input cannot be empty.");
+        }
+
+        // Validate all characters are in ABC
+        for (int i = 0; i < input.length(); i++) {
+            char c = input.charAt(i);
+            if (abc.indexOf(c) == -1) {
+                throw new IllegalArgumentException("Invalid character '" + c + 
+                        "' at position " + (i + 1) + ". Character is not in the ABC: " + abc);
+            }
+        }
+
+        // Process the input
         char[] result = new char[input.length()];
         for (int i = 0; i < input.length(); i++) {
             char c = input.charAt(i);

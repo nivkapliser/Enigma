@@ -11,15 +11,14 @@ import java.util.List;
 
 public class MachineDataFormatter {
 
-    public MachineData createMachineData(MachineImpl machineImpl, Code originalCode, 
+    public MachineData createMachineData(MachineImpl machineImpl, String originalCodeString, 
                                          int totalRotors, int totalReflectors, int messagesProcessed) {
         MachineData machineData = new MachineData(totalRotors, totalReflectors, messagesProcessed);
 
         Code currentCode = (machineImpl != null) ? machineImpl.getCode() : null;
 
-        if (originalCode != null && machineImpl != null) {
-            String stringOriginalCode = formatCodeConfiguration(originalCode, machineImpl);
-            machineData.setOriginalCode(stringOriginalCode);
+        if (originalCodeString != null) {
+            machineData.setOriginalCode(originalCodeString);
         } else {
             machineData.setOriginalCode(null);
         }
@@ -32,6 +31,10 @@ public class MachineDataFormatter {
         }
 
         return machineData;
+    }
+
+    public String formatCode(Code code, MachineImpl machineImpl) {
+        return formatCodeConfiguration(code, machineImpl);
     }
 
     private String formatCodeConfiguration(Code code, MachineImpl machineImpl) {
