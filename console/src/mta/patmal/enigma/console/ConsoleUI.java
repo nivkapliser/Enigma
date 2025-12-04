@@ -56,8 +56,10 @@ public class ConsoleUI {
                 break;
 
             case 2: // Show Machine Data
-                engine.showMachineData();
-                showMachineData();
+                MachineData machineData = engine.showMachineData();
+                if (machineData != null) {
+                    showMachineData(machineData);
+                }
                 break;
 
             case 3: // Code Manual
@@ -94,15 +96,16 @@ public class ConsoleUI {
         }
     }
 
-    private void showMachineData(){
-        MachineData machineData = engine.showMachineData();
+    private void showMachineData(MachineData machineData){
         System.out.println("Machine specification:");
         System.out.println("Total rotors: " + machineData.getTotalRotors());
         System.out.println("Total reflectors: " + machineData.getTotalReflectors());
         System.out.println("Messages processed since last load: " + machineData.getMessagesProcessed());
 
-        if (machineData.getOriginalCode() != null) {
-            System.out.println("Original code configuration: " + machineData.getOriginalCode());
+        if (machineData.getCurrentCode() != null) {
+            if (machineData.getOriginalCode() != null) {
+                System.out.println("Original code configuration: " + machineData.getOriginalCode());
+            }
             System.out.println("Current code configuration: " + machineData.getCurrentCode());
         } else {
             System.out.println("No code configured.");
