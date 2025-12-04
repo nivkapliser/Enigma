@@ -183,6 +183,7 @@ public class JaxbTranslator {
             int input = convertToZeroBased(reflect.getInput());
             int output = convertToZeroBased(reflect.getOutput());
             wiring.put(input, output);
+            wiring.put(output, input);
         }
         return wiring;
     }

@@ -72,9 +72,16 @@ public class ConsoleUI {
 
             case 5: // Process
                 System.out.print("Enter text to process: ");
-                String text = System.console().readLine();
-                String result = engine.process(text);
-                System.out.println("Processed text: " + result);
+                Scanner scanner2 = new Scanner(System.in);
+                String text = scanner2.nextLine();
+                try {
+                    String result = engine.process(text);
+                    System.out.println("Processed text: " + result);
+                } catch (IllegalStateException e) {
+                    System.out.println("Error: " + e.getMessage());
+                } catch (IllegalArgumentException e) {
+                    System.out.println("Error: " + e.getMessage());
+                }
                 break;
 
             case 6: // Reset Current Code
