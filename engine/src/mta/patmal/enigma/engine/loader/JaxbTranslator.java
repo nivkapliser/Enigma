@@ -1,207 +1,194 @@
 package mta.patmal.enigma.engine.loader;
 
 import mta.patmal.enigma.engine.jaxb.generated.*;
+import mta.patmal.enigma.machine.component.code.Code;
+import mta.patmal.enigma.machine.component.code.CodeImpl;
+import mta.patmal.enigma.machine.component.keyboard.Keyboard;
+import mta.patmal.enigma.machine.component.keyboard.KeyboardImpl;
 import mta.patmal.enigma.machine.component.machine.Machine;
+import mta.patmal.enigma.machine.component.machine.MachineImpl;
 import mta.patmal.enigma.machine.component.reflector.Reflector;
+import mta.patmal.enigma.machine.component.reflector.ReflectorImpl;
 import mta.patmal.enigma.machine.component.rotor.Rotor;
+import mta.patmal.enigma.machine.component.rotor.RotorImpl;
+import mta.patmal.enigma.engine.loader.RomanNumeralUtils;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class JaxbTranslator {
-
-    public void validateMachineFormat(BTEEnigma xmlEnigma) {
-        if (xmlEnigma == null) {
-            throw new IllegalArgumentException("Invalid XML file"); // change
-        }
-
-        validateABC(xmlEnigma);
-        validateRotors(xmlEnigma);
-        validateReflectors(xmlEnigma);
-
-    }
-
-    private void validateABC(BTEEnigma bteEnigma) {
-        String abc = bteEnigma.getABC();
-        if (abc == null){
-            System.out.println("No ABC specified"); // will change to an exception
-        }
-        abc = abc.trim();
-        if (abc.length() % 2 != 0){
-            System.out.println("ABC must be even length"); // will change to an exception
-        }
-    }
-
-    private void validateRotors(BTEEnigma bteEnigma) {
-        List<BTERotor> rotors = bteEnigma.getBTERotors().getBTERotor();
-        String abc = bteEnigma.getABC();
-        int abcSize = abc.length();
-
-        if (rotors == null || rotors.size() < 3){
-            System.out.println("At least 3 rotors are required"); // will change to an exception
-        }
-
-        Set<Integer> ids = new HashSet<>();
-        int minId = Integer.MAX_VALUE;
-        int maxId = Integer.MIN_VALUE;
-
-        for (BTERotor rotor : rotors) {
-            int id = rotor.getId();
-            if (!ids.add(id)) {
-                System.out.println("Duplicate rotor id: " + id); // will change to an exception
-            }
-            minId = Math.min(minId, id);
-            maxId = Math.max(maxId, id);
-
-            validateSingleRotorMappings(rotor, abcSize);
-            validateNotch(rotor, abcSize);
-        }
-        if (minId != 1) {
-            System.out.println("Rotor ids must start from 1, minimal id is " + minId); // will change to an exception
-        }
-
-        if (ids.size() != maxId) {
-            System.out.println("Rotor ids must form a continuous sequence 1.." + maxId + ", but got: " + ids);
-        }
-    }
-
-    private void validateSingleRotorMappings(BTERotor rotor, int abcSize) {
-        List<BTEPositioning> mappings = rotor.getBTEPositioning();
-        if (mappings == null || mappings.isEmpty()) {
-            System.out.println("Rotor " + rotor.getId() + " has no mappings"); // will change to an exception
-        }
-
-        Set<Character> leftSet = new HashSet<>(); // should change to map?
-        Set<Character> rightSet = new HashSet<>(); // should change to map?
-
-        for (BTEPositioning pos : mappings) {
-            String leftStr = pos.getLeft();
-            String rightStr = pos.getRight();
-
-            if (leftStr == null || rightStr == null || leftStr.length() != 1 || rightStr.length() != 1) {
-                System.out.println("Rotor " + rotor.getId() + " has invalid mapping (left/right must be single letters)"); // will change to an exception
-            }
-
-            char left = leftStr.charAt(0);
-            char right = rightStr.charAt(0);
-
-            if (!leftSet.add(left)) {
-                System.out.println("Rotor " + rotor.getId() + " has duplicate mapping for LEFT letter: " + left); // will change to an exception
-            }
-            if (!rightSet.add(right)) {
-                System.out.println("Rotor " + rotor.getId() + " has duplicate mapping for RIGHT letter: " + right);
-            }
-        }
-
-        if (mappings.size() != abcSize) {
-            System.out.println("Rotor " + rotor.getId() + " mapping count (" + mappings.size() +
-                            ") does not match ABC size (" + abcSize + ")"); // will change to an exception
-        }
-    }
-
-    private void validateNotch(BTERotor rotor, int abcSize) {
-        int notch = rotor.getNotch();
-        if (notch < 1 || notch > abcSize) {
-            System.out.println("Rotor " + rotor.getId() + " notch (" + notch + ") is out of range 1.." + abcSize);// will change to an exception
-        }
-    }
-
-    private void validateReflectors(BTEEnigma machine) {
-        List<BTEReflector> reflectors = machine.getBTEReflectors().getBTEReflector();
-        if (reflectors == null || reflectors.isEmpty()) {
-            System.out.println("No reflectors defined in XML"); // will change to an exception
-        }
-
-        Set<Integer> ids = new HashSet<>();
-        int maxId = Integer.MIN_VALUE;
-
-        for (BTEReflector reflector : reflectors) {
-            String romanId = reflector.getId();
-            int numericId = romanToInt(romanId);
-
-            if (numericId < 1 || numericId > 5) {
-                System.out.println("Reflector id must be in range I..V, got: " + romanId); // will change to an exception
-            }
-
-            if (!ids.add(numericId)) {
-                System.out.println("Duplicate reflector id: " + romanId + " (=" + numericId + ")"); // will change to an exception
-            }
-
-            maxId = Math.max(maxId, numericId);
-
-            validateSingleReflectorMappings(reflector);
-        }
-
-        for (int i = 1; i <= maxId; i++) {
-            if (!ids.contains(i)) {
-                System.out.println(
-                        "Reflector ids must form a continuous roman sequence from I to " +
-                                intToRoman(maxId) + ", missing: " + intToRoman(i)); // will change to exception
-            }
-        }
-    }
-
-    private void validateSingleReflectorMappings(BTEReflector reflector) {
-        List<BTEReflect> mappings = reflector.getBTEReflect();
-        if (mappings == null || mappings.isEmpty()) {
-            System.out.println(
-                    "Reflector " + reflector.getId() + " has no mappings"); // will change to an exception
-        }
-
-        for (BTEReflect mapping : mappings) {
-            int input = mapping.getInput();
-            int output = mapping.getOutput();
-
-            if (input == output) {
-                System.out.println(
-                        "Reflector " + reflector.getId() +
-                                " has a mapping from position to itself: " + input); // will change to an exception
-            }
-        }
-    }
-
-    private int romanToInt(String roman) {
-        if (roman == null) {
-            System.out.println("Reflector id is null"); // will change to exception
-        }
-
-        switch (roman.trim()) {
-            case "I":
-                return 1;
-            case "II":
-                return 2;
-            case "III":
-                return 3;
-            case "IV":
-                return 4;
-            case "V":
-                return 5;
-            default:
-                System.out.println("Invalid roman reflector id: " + roman); // will change to exception
-                return -1;
-        }
-    }
-
-    private String intToRoman(int value) {
-        switch (value) {
-            case 1:
-                return "I";
-            case 2:
-                return "II";
-            case 3:
-                return "III";
-            case 4:
-                return "IV";
-            case 5:
-                return "V";
-            default:
-                return Integer.toString(value);
-        }
-    }
+    private static final int MIN_REQUIRED_ROTORS = 3;
+    private static final int INITIAL_POSITION = 0;
+    private static final int INITIAL_RING_SETTING = 0;
+    private static final int INDEX_NOT_FOUND = -1;
 
     public Machine translateToMachine(BTEEnigma enigma) {
-        return null;
+        String abc = enigma.getABC().trim();
+        Keyboard keyboard = createKeyboard(abc);
+        
+        List<BTERotor> selectedBteRotors = selectRotors(enigma);
+        List<Rotor> selectedRotors = createRotors(selectedBteRotors, abc);
+        
+        Reflector selectedReflector = selectAndCreateReflector(enigma);
+        List<Integer> initialPositions = createInitialPositions(selectedRotors.size());
+        
+        return assembleMachine(keyboard, selectedRotors, initialPositions, selectedReflector);
+    }
+
+    public Machine createMachineWithoutCode(BTEEnigma enigma) {
+        String abc = enigma.getABC().trim();
+        Keyboard keyboard = createKeyboard(abc);
+        return new MachineImpl(keyboard);
+    }
+    
+    private Keyboard createKeyboard(String abc) {
+        return new KeyboardImpl(abc);
+    }
+    
+    private List<BTERotor> selectRotors(BTEEnigma enigma) {
+        List<BTERotor> bteRotors = enigma.getBTERotors().getBTERotor();
+        return bteRotors.stream()
+                .sorted((r1, r2) -> Integer.compare(r1.getId(), r2.getId()))
+                .limit(MIN_REQUIRED_ROTORS)
+                .collect(Collectors.toList());
+    }
+    
+    private Reflector selectAndCreateReflector(BTEEnigma enigma) {
+        List<BTEReflector> bteReflectors = enigma.getBTEReflectors().getBTEReflector();
+        BTEReflector selectedBteReflector = bteReflectors.stream()
+                .sorted((r1, r2) -> Integer.compare(RomanNumeralUtils.romanToInt(r1.getId()), RomanNumeralUtils.romanToInt(r2.getId())))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("No reflectors available"));
+        return createReflector(selectedBteReflector);
+    }
+    
+    private List<Integer> createInitialPositions(int rotorCount) {
+        List<Integer> initialPositions = new ArrayList<>();
+        for (int i = 0; i < rotorCount; i++) {
+            initialPositions.add(INITIAL_POSITION);
+        }
+        return initialPositions;
+    }
+    
+    private Machine assembleMachine(Keyboard keyboard, List<Rotor> rotors, List<Integer> positions, Reflector reflector) {
+        Code code = new CodeImpl(rotors, positions, reflector);
+        Machine machine = new MachineImpl(keyboard);
+        machine.setCode(code);
+        return machine;
+    }
+
+    private List<Rotor> createRotors(List<BTERotor> bteRotors, String abc) {
+        List<Rotor> rotors = new ArrayList<>();
+        for (BTERotor bteRotor : bteRotors) {
+            Rotor rotor = createRotorFromBte(bteRotor, abc);
+            rotors.add(rotor);
+        }
+        return rotors;
+    }
+
+    public Rotor createRotorFromBte(BTERotor bteRotor, String abc) {
+        RotorWiring wiring = buildRotorWiring(bteRotor, abc);
+        int notch = convertNotchToZeroBased(bteRotor.getNotch());
+        return createRotor(bteRotor.getId(), wiring, notch);
+    }
+
+    public Rotor createRotorById(BTEEnigma enigma, int rotorId) {
+        String abc = enigma.getABC().trim();
+        List<BTERotor> bteRotors = enigma.getBTERotors().getBTERotor();
+        BTERotor bteRotor = bteRotors.stream()
+                .filter(r -> r.getId() == rotorId)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Rotor with ID " + rotorId + " not found"));
+        return createRotorFromBte(bteRotor, abc);
+    }
+    
+    private RotorWiring buildRotorWiring(BTERotor bteRotor, String abc) {
+        Map<Integer, Integer> forwardWiring = new HashMap<>();
+        Map<Integer, Integer> backwardWiring = new HashMap<>();
+        
+        for (BTEPositioning positioning : bteRotor.getBTEPositioning()) {
+            char leftChar = positioning.getLeft().charAt(0);
+            char rightChar = positioning.getRight().charAt(0);
+            
+            int leftIndex = abc.indexOf(leftChar);
+            int rightIndex = abc.indexOf(rightChar);
+            
+            if (leftIndex == INDEX_NOT_FOUND || rightIndex == INDEX_NOT_FOUND) {
+                throw new IllegalArgumentException(
+                        "Character not found in ABC: left=" + leftChar + ", right=" + rightChar);
+            }
+            
+            forwardWiring.put(leftIndex, rightIndex);
+            backwardWiring.put(rightIndex, leftIndex);
+        }
+        
+        return new RotorWiring(forwardWiring, backwardWiring);
+    }
+    
+    private int convertNotchToZeroBased(int notch) {
+        return notch - 1;
+    }
+    
+    private Rotor createRotor(int id, RotorWiring wiring, int notch) {
+        return new RotorImpl(
+                id,
+                wiring.forward,
+                wiring.backward,
+                INITIAL_POSITION,
+                notch,
+                INITIAL_RING_SETTING
+        );
+    }
+    
+    private static class RotorWiring {
+        final Map<Integer, Integer> forward;
+        final Map<Integer, Integer> backward;
+        
+        RotorWiring(Map<Integer, Integer> forward, Map<Integer, Integer> backward) {
+            this.forward = forward;
+            this.backward = backward;
+        }
+    }
+    
+    private Reflector createReflector(BTEReflector bteReflector) {
+        Map<Integer, Integer> wiring = buildReflectorWiring(bteReflector);
+        int id = RomanNumeralUtils.romanToInt(bteReflector.getId());
+        return new ReflectorImpl(id, wiring);
+    }
+
+    public Reflector createReflectorFromBte(BTEReflector bteReflector) {
+        return createReflector(bteReflector);
+    }
+
+    public Reflector createReflectorByRomanId(BTEEnigma enigma, String romanId) {
+        List<BTEReflector> bteReflectors = enigma.getBTEReflectors().getBTEReflector();
+        BTEReflector bteReflector = bteReflectors.stream()
+                .filter(r -> r.getId().equals(romanId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Reflector with ID " + romanId + " not found"));
+        return createReflectorFromBte(bteReflector);
+    }
+
+    public Reflector createReflectorByNumericId(BTEEnigma enigma, int numericId) {
+        String romanId = RomanNumeralUtils.intToRoman(numericId);
+        return createReflectorByRomanId(enigma, romanId);
+    }
+    
+    private Map<Integer, Integer> buildReflectorWiring(BTEReflector bteReflector) {
+        Map<Integer, Integer> wiring = new HashMap<>();
+        for (BTEReflect reflect : bteReflector.getBTEReflect()) {
+            int input = convertToZeroBased(reflect.getInput());
+            int output = convertToZeroBased(reflect.getOutput());
+            wiring.put(input, output);
+            wiring.put(output, input);
+        }
+        return wiring;
+    }
+    
+    private int convertToZeroBased(int oneBasedIndex) {
+        return oneBasedIndex - 1;
     }
 }

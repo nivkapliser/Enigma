@@ -1,14 +1,15 @@
 package mta.patmal.enigma.machine.component.reflector;
-import java.util.HashMap;
 import java.util.Map;
 
 public class ReflectorImpl implements Reflector {
     private final Map<Integer, Integer> wiring;
+    private final int id;
 
-    public ReflectorImpl(Map<Integer, Integer> wiring) {
+    public ReflectorImpl(int id, Map<Integer, Integer> wiring) {
         if (wiring == null || wiring.isEmpty()) {
             throw new IllegalArgumentException("Wiring cannot be null or empty");
         }
+        this.id = id;
         this.wiring = wiring;
     }
 
@@ -19,5 +20,10 @@ public class ReflectorImpl implements Reflector {
             throw new IllegalArgumentException("Invalid input for reflector" + input);
         }
         return output;
+    }
+
+    @Override
+    public int getId() {
+        return id;
     }
 }

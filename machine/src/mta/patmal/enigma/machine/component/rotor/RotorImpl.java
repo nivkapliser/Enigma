@@ -6,21 +6,24 @@ public class RotorImpl implements Rotor {
     private final int id;
     private final Map<Integer, Integer> forwardWiring;
     private final Map<Integer, Integer> backwardWiring;
-    private final int notch;
     private int position;
+    private final int notch;
+    private final int ringSetting;
 
     public RotorImpl(
             int id,
             final Map<Integer, Integer> forwardWiring,
             final Map<Integer, Integer> backwardWiring,
             int position,
-            final int notch
+            final int notch,
+            int ringSetting
     ) {
         this.id = id;
         this.forwardWiring = forwardWiring;
         this.backwardWiring = backwardWiring;
         this.position = position;
         this.notch = notch;
+        this.ringSetting = ringSetting;
     }
 
     @Override
@@ -31,7 +34,7 @@ public class RotorImpl implements Rotor {
 
     private int processWithWiring(int input, Map<Integer, Integer> wiring) {
         int size = wiring.size();
-        int shift = (position + size) % size;
+        int shift = (position - ringSetting + size) % size;
         int contact = (input + shift) % size;
         int result = (wiring.get(contact) - shift + size) % size;
         return result >= 0 ? result : result + size;
@@ -52,5 +55,15 @@ public class RotorImpl implements Rotor {
     public void setPosition(int position) {
         int size = forwardWiring.size();
         this.position = Math.floorMod(position, size);
-        }
+    }
+
+    @Override
+    public int getId() {
+        return id;
+    }
+
+    @Override
+    public int getNotch() {
+        return notch;
+    }
 }

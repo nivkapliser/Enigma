@@ -5,4 +5,6 @@ public interface Rotor {
     boolean advance();
     int getPosition();
     void setPosition(int position);
+    int getId();
+    int getNotch();
 }
