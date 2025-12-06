@@ -52,7 +52,8 @@
         </SOURCES>
       </library>
     </orderEntry>
-    <orderEntry type="library" exported="" name="angus-activation" level="project" />
-    <orderEntry type="module" module-name="dto" exported="" />
+    <orderEntry type="library" name="angus-activation" level="project" />
+    <orderEntry type="library" name="src" level="project" />
+    <orderEntry type="module" module-name="enigma" exported="" />
   </component>
 </module>
