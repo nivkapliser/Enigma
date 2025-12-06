@@ -86,7 +86,12 @@ public class ConsoleUI {
 
             case 6: // Reset Current Code
                 System.out.println("Resetting current code...");
-                // engine.resetCurrentCode(); // Uncomment if this method is added to Engine interface
+                try {
+                    engine.resetCurrentCode();
+                    System.out.println("Code was reset to original configuration.");
+                } catch (Exception e) {
+                    System.out.println("Error: " + e.getMessage());
+                }
                 break;
 
             case 7: // Statistics

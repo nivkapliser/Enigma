@@ -11,4 +11,5 @@ public interface Engine {
     void codeAutomatic();
     String process(String input);
     void statistics();
+    void resetCurrentCode();
 }
