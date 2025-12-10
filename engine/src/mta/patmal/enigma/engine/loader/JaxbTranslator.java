@@ -104,7 +104,53 @@ public class JaxbTranslator {
                 .orElseThrow(() -> new IllegalArgumentException("Rotor with ID " + rotorId + " not found"));
         return createRotorFromBte(bteRotor, abc);
     }
-    
+
+    public int getPositionIndexByRightLetter(BTEEnigma enigma, int rotorId, char letter) {
+
+        char target = Character.toUpperCase(letter);
+
+
+        List<BTERotor> bteRotors = enigma.getBTERotors().getBTERotor();
+        BTERotor bteRotor = bteRotors.stream()
+                .filter(r -> r.getId() == rotorId)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Rotor with ID " + rotorId + " not found"));
+
+
+        int rowIndex = 0;
+        for (BTEPositioning pos : bteRotor.getBTEPositioning()) {
+            char rightChar = Character.toUpperCase(pos.getRight().charAt(0));
+            if (rightChar == target) {
+                return rowIndex;
+            }
+            rowIndex++;
+        }
+
+        throw new IllegalArgumentException(
+                "Letter '" + letter + "' not found in RIGHT column of rotor " + rotorId);
+    }
+
+
+    public char getRightLetterByPosition(BTEEnigma enigma, int rotorId, int positionIndex) {
+        List<BTERotor> bteRotors = enigma.getBTERotors().getBTERotor();
+        BTERotor rotor = bteRotors.stream()
+                .filter(r -> r.getId() == rotorId)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Rotor with ID " + rotorId + " not found"));
+
+        List<BTEPositioning> positions = rotor.getBTEPositioning();
+
+        if (positionIndex < 0 || positionIndex >= positions.size()) {
+            throw new IllegalArgumentException(
+                    "Position index " + positionIndex + " is out of range for rotor " + rotorId);
+        }
+
+        return positions.get(positionIndex).getRight().charAt(0);
+    }
+
+
     private RotorWiring buildRotorWiring(BTERotor bteRotor, String abc) {
         Map<Integer, Integer> forwardWiring = new HashMap<>();
         Map<Integer, Integer> backwardWiring = new HashMap<>();

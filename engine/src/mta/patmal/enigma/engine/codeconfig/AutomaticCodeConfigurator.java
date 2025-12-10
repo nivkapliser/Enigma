@@ -36,7 +36,7 @@ public class AutomaticCodeConfigurator {
     public boolean configure() {
         try {
             List<Integer> rotorIds = generateRandomRotorIds();
-            List<Integer> rotorPositions = generateRandomRotorPositions();
+            List<Integer> rotorPositions = generateRandomRotorPositions(rotorIds);
             Reflector reflector = generateRandomReflector();
 
             createAndSetCode(rotorIds, rotorPositions, reflector);
@@ -62,16 +62,24 @@ public class AutomaticCodeConfigurator {
         return rotorIds;
     }
 
-    private List<Integer> generateRandomRotorPositions() {
+    private List<Integer> generateRandomRotorPositions(List<Integer> rotorIds) {
         List<Integer> positions = new ArrayList<>();
 
         for (int i = 0; i < REQUIRED_ROTOR_COUNT; i++) {
-            int position = random.nextInt(abc.length());
-            positions.add(position);
+            int rotorId = rotorIds.get(i);
+
+            // בוחרים אות אקראית מתוך ה־ABC
+            char letter = abc.charAt(random.nextInt(abc.length()));
+
+            // ממפים לאינדקס השורה בעמודת RIGHT של הרוטור הזה
+            int positionIndex = xmlLoader.getPositionIndexByRightLetter(rotorId, letter);
+
+            positions.add(positionIndex);
         }
 
         return positions;
     }
+
 
     private Reflector generateRandomReflector() {
         int reflectorId = random.nextInt(totalReflectors) + 1; // 1-based indexing

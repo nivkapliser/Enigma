@@ -37,7 +37,7 @@ public class ManualCodeConfigurator {
             return false; // User chose to return to main menu
         }
 
-        List<Integer> rotorPositions = promptAndParseRotorPositionsWithRetry();
+        List<Integer> rotorPositions = promptAndParseRotorPositionsWithRetry(rotorIds);
         if (rotorPositions == null) {
             return false; // User chose to return to main menu
         }
@@ -128,7 +128,7 @@ public class ManualCodeConfigurator {
         return rotorIds;
     }
 
-    private List<Integer> promptAndParseRotorPositionsWithRetry() {
+    private List<Integer> promptAndParseRotorPositionsWithRetry(List<Integer> rotorIds) {
         Scanner scanner = new Scanner(System.in);
         while (true) {
             displayAvailablePositions();
@@ -141,7 +141,7 @@ public class ManualCodeConfigurator {
             }
             
             try {
-                return parseRotorPositions(input);
+                return parseRotorPositions(input,rotorIds);
             } catch (IllegalArgumentException e) {
                 System.out.println("Error: " + e.getMessage());
                 if (!shouldRetry(scanner)) {
@@ -156,7 +156,7 @@ public class ManualCodeConfigurator {
     }
 
 
-    private List<Integer> parseRotorPositions(String input) {
+    private List<Integer> parseRotorPositions(String input, List<Integer> rotorIds) {
         if (input == null || input.trim().isEmpty()) {
             throw new IllegalArgumentException("Initial positions cannot be empty. Please enter " + 
                     REQUIRED_ROTOR_COUNT + " characters from the ABC.");
@@ -171,15 +171,18 @@ public class ManualCodeConfigurator {
         List<Integer> positions = new ArrayList<>();
         for (int i = 0; i < input.length(); i++) {
             char positionChar = input.charAt(i);
-            int index = abc.indexOf(positionChar);
-            
-            if (index == -1) {
-                throw new IllegalArgumentException("Character '" + positionChar + 
-                        "' is not in the ABC. The ABC is: " + abc + 
+            // קודם מוודאים שהאות בכלל נמצאת ב-ABC
+            if (abc.indexOf(positionChar) == -1) {
+                throw new IllegalArgumentException("Character '" + positionChar +
+                        "' is not in the ABC. The ABC is: " + abc +
                         ". Please enter " + REQUIRED_ROTOR_COUNT + " characters from the ABC.");
             }
-            
-            positions.add(index);
+
+            int rotorId = rotorIds.get(i); // הרוטור המתאים לאות הזאת (משמאל לימין)
+
+            // וזה החלק החשוב: לוקחים את האינדקס בעמודת RIGHT של הרוטור
+            int zeroBasedPos = xmlLoader.getPositionIndexByRightLetter(rotorId, positionChar);
+            positions.add(zeroBasedPos);
         }
 
         return positions;
