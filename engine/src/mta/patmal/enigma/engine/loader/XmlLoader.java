@@ -91,4 +91,17 @@ public class XmlLoader {
         }
     }
 
+    public int getPositionIndexByRightLetter(int rotorId, char letter) {
+        if (lastLoadedEnigma == null) {
+            throw new IllegalStateException("No XML file has been loaded");
+        }
+        return jaxbTranslator.getPositionIndexByRightLetter(lastLoadedEnigma, rotorId, letter);
+    }
+
+    public char getRightLetterByPosition(int rotorId, int positionIndex) {
+        if (lastLoadedEnigma == null) {
+            throw new IllegalStateException("No XML file has been loaded");
+        }
+        return jaxbTranslator.getRightLetterByPosition(lastLoadedEnigma, rotorId, positionIndex);
+    }
 }

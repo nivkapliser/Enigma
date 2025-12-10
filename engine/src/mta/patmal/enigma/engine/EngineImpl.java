@@ -19,7 +19,7 @@ public class EngineImpl implements Engine{
 
     private Machine machine;
     private final XmlLoader xmlLoader = new XmlLoader();
-    private final MachineDataFormatter dataFormatter = new MachineDataFormatter();
+    private final MachineDataFormatter dataFormatter = new MachineDataFormatter(xmlLoader);
     private int totalRotors;
     private int totalReflectors;
     private int messagesProcessed;

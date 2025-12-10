@@ -42,9 +42,9 @@ public class RotorImpl implements Rotor {
 
     @Override
     public boolean advance() {
-        boolean reachedNotch = position == notch;
-        position = (position + 1) % forwardWiring.size();
-        return reachedNotch;
+        int size = forwardWiring.size();
+        position = (position + 1) % size;
+        return position == notch;   // עכשיו בודק אחרי הפסיעה
     }
 
     @Override

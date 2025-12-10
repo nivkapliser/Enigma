@@ -2,6 +2,7 @@ package mta.patmal.enigma.engine.display;
 
 import mta.patmal.enigma.dto.MachineData;
 import mta.patmal.enigma.engine.loader.RomanNumeralUtils;
+import mta.patmal.enigma.engine.loader.XmlLoader;
 import mta.patmal.enigma.machine.component.code.Code;
 import mta.patmal.enigma.machine.component.machine.MachineImpl;
 import mta.patmal.enigma.machine.component.reflector.Reflector;
@@ -10,6 +11,12 @@ import mta.patmal.enigma.machine.component.rotor.Rotor;
 import java.util.List;
 
 public class MachineDataFormatter {
+
+    private final XmlLoader xmlLoader;
+
+    public MachineDataFormatter(XmlLoader xmlLoader) {
+        this.xmlLoader = xmlLoader;
+    }
 
     public MachineData createMachineData(MachineImpl machineImpl, String originalCodeString, 
                                          int totalRotors, int totalReflectors, int messagesProcessed) {
@@ -63,7 +70,7 @@ public class MachineDataFormatter {
         for (int i = rotors.size() - 1; i >= 0; i--) {
             Rotor rotor = rotors.get(i);
             int position = rotor.getPosition();
-            char windowChar = machineImpl.indexToChar(position);
+            char windowChar = xmlLoader.getRightLetterByPosition(rotor.getId(), position);
             int distance = (rotor.getNotch() - position + alphabetSize) % alphabetSize;
 
             sb.append(windowChar)
