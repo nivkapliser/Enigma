@@ -1,5 +1,6 @@
 package mta.patmal.enigma.engine.codeconfig;
 
+import mta.patmal.enigma.engine.exceptions.InvalidConfigurationException;
 import mta.patmal.enigma.engine.loader.XmlLoader;
 import mta.patmal.enigma.machine.component.code.Code;
 import mta.patmal.enigma.machine.component.code.CodeImpl;
@@ -33,18 +34,14 @@ public class AutomaticCodeConfigurator {
         this.random = new Random();
     }
 
-    public boolean configure() {
+    public void configure() throws InvalidConfigurationException {
         try {
             List<Integer> rotorIds = generateRandomRotorIds();
             List<Integer> rotorPositions = generateRandomRotorPositions(rotorIds);
             Reflector reflector = generateRandomReflector();
-
             createAndSetCode(rotorIds, rotorPositions, reflector);
-            System.out.println("Code configuration set successfully!");
-            return true;
         } catch (Exception e) {
-            System.out.println("Error configuring code: " + e.getMessage());
-            return false;
+            throw new InvalidConfigurationException("Failed to automatically configure code: " + e.getMessage(), e);
         }
     }
 
@@ -67,27 +64,20 @@ public class AutomaticCodeConfigurator {
 
         for (int i = 0; i < REQUIRED_ROTOR_COUNT; i++) {
             int rotorId = rotorIds.get(i);
-
-            // בוחרים אות אקראית מתוך ה־ABC
             char letter = abc.charAt(random.nextInt(abc.length()));
-
-            // ממפים לאינדקס השורה בעמודת RIGHT של הרוטור הזה
             int positionIndex = xmlLoader.getPositionIndexByRightLetter(rotorId, letter);
-
             positions.add(positionIndex);
         }
 
         return positions;
     }
 
-
     private Reflector generateRandomReflector() {
         int reflectorId = random.nextInt(totalReflectors) + 1; // 1-based indexing
         return xmlLoader.createReflectorByNumericId(reflectorId);
     }
 
-    private void createAndSetCode(List<Integer> rotorIds, List<Integer> rotorPositions, Reflector reflector) {
-
+    private void createAndSetCode(List<Integer> rotorIds, List<Integer> rotorPositions, Reflector reflector) throws InvalidConfigurationException {
         List<Integer> reversedRotorIds = new ArrayList<>();
         List<Integer> reversedPositions = new ArrayList<>();
         
@@ -115,8 +105,7 @@ public class AutomaticCodeConfigurator {
         if (machine instanceof MachineImpl) {
             ((MachineImpl) machine).setCode(code);
         } else {
-            throw new IllegalStateException("Machine is not a MachineImpl instance");
+            throw new InvalidConfigurationException("Machine is not a valid MachineImpl instance");
         }
     }
 }
-

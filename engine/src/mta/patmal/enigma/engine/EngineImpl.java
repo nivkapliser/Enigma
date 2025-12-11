@@ -1,9 +1,15 @@
 package mta.patmal.enigma.engine;
 
+import mta.patmal.enigma.dto.CodeConfigurationRequestDTO;
+import mta.patmal.enigma.dto.CodeConfigurationResultDTO;
+import mta.patmal.enigma.dto.MachineConfigSpecs;
 import mta.patmal.enigma.dto.MachineData;
+import mta.patmal.enigma.dto.ProcessingEntryDTO;
+import mta.patmal.enigma.dto.StatisticsDTO;
 import mta.patmal.enigma.engine.codeconfig.AutomaticCodeConfigurator;
 import mta.patmal.enigma.engine.codeconfig.ManualCodeConfigurator;
 import mta.patmal.enigma.engine.display.MachineDataFormatter;
+import mta.patmal.enigma.engine.exceptions.*;
 import mta.patmal.enigma.engine.loader.XmlLoader;
 import mta.patmal.enigma.machine.component.code.Code;
 import mta.patmal.enigma.machine.component.code.CodeImpl;
@@ -14,8 +20,10 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-public class EngineImpl implements Engine{
+public class EngineImpl implements Engine {
 
     private Machine machine;
     private final XmlLoader xmlLoader = new XmlLoader();
@@ -27,32 +35,27 @@ public class EngineImpl implements Engine{
     private String abc;
     private Code originalCode;
     private final Map<String, List<HistoryEntry>> history = new LinkedHashMap<>();
-    // private StatisticsManager statisticsManager;
-    // private Repository repository; why not machine?
 
     @Override
-    public void loadXml(String path) {
+    public void loadXml(String path) throws XmlLoadException {
         try {
             this.machine = xmlLoader.loadMachineFromXml(path);
             this.totalRotors = xmlLoader.getTotalRotorCount();
             this.totalReflectors = xmlLoader.getTotalReflectorCount();
             this.messagesProcessed = 0;
             this.abc = xmlLoader.getABC();
-            // Machine is created without code - code will be set later by user
             this.originalCodeString = null;
             this.originalCode = null;
             this.history.clear();
-        } catch (Exception e) { // need to narrow down
-            e.printStackTrace();
+        } catch (Exception e) {
+            throw new XmlLoadException("Failed to load XML file: " + e.getMessage(), e);
         }
-        System.out.println("XML file loaded successfully!"); // should be in console
     }
 
     @Override
-    public MachineData showMachineData() {
+    public MachineData showMachineData() throws MachineNotLoadedException {
         if (machine == null) {
-            System.out.println("Error: No machine loaded. Please load an XML file first (command 1).");
-            return null;
+            throw new MachineNotLoadedException();
         }
 
         MachineImpl machineImpl = (machine instanceof MachineImpl)
@@ -60,8 +63,7 @@ public class EngineImpl implements Engine{
                 : null;
 
         if (machineImpl == null) {
-            System.out.println("Error: Machine is not a valid MachineImpl instance.");
-            return null;
+            throw new MachineNotLoadedException("Machine is not a valid MachineImpl instance.");
         }
 
         return dataFormatter.createMachineData(machineImpl, originalCodeString, 
@@ -69,80 +71,101 @@ public class EngineImpl implements Engine{
     }
 
     @Override
-    public void codeManual() {
+    public MachineConfigSpecs getMachineConfigSpecs() throws MachineNotLoadedException {
         if (machine == null || abc == null) {
-            System.out.println("Error: No machine loaded. Please load an XML file first (command 1).");
-            return;
+            throw new MachineNotLoadedException();
+        }
+
+        List<Integer> availableRotorIds = IntStream.rangeClosed(1, totalRotors)
+                .boxed()
+                .collect(Collectors.toList());
+        
+        List<Integer> availableReflectorIds = IntStream.rangeClosed(1, totalReflectors)
+                .boxed()
+                .collect(Collectors.toList());
+
+        return new MachineConfigSpecs(availableRotorIds, availableReflectorIds, 3, abc);
+    }
+
+    @Override
+    public CodeConfigurationResultDTO codeManual(CodeConfigurationRequestDTO request) 
+            throws MachineNotLoadedException, InvalidConfigurationException {
+        if (machine == null || abc == null) {
+            throw new MachineNotLoadedException();
         }
 
         ManualCodeConfigurator configurator = new ManualCodeConfigurator(
                 machine, xmlLoader, abc, totalRotors, totalReflectors);
 
-        boolean success = configurator.configure();
+        configurator.configure(request.getRotorIds(), request.getPositionsString(), request.getReflectorId());
         
-        // Set originalCode the first time a code is successfully configured
-        if (success && machine instanceof MachineImpl machineImpl) {
-            Code currentCode= machineImpl.getCode();
+        // Update original code after successful configuration
+        if (machine instanceof MachineImpl machineImpl) {
+            Code currentCode = machineImpl.getCode();
             var rotors = currentCode.getRotors();
             var reflector = currentCode.getReflector();
-            var positions = new java.util.ArrayList<Integer>();
+            var positions = new ArrayList<Integer>();
             for (var rotor : rotors) {
                 positions.add(rotor.getPosition());
             }
             this.originalCode = new CodeImpl(rotors, positions, reflector);
             this.originalCodeString = dataFormatter.formatCode(currentCode, machineImpl);
-
+            
+            return CodeConfigurationResultDTO.success(originalCodeString);
         }
+        
+        throw new InvalidConfigurationException("Failed to retrieve configuration after setup");
     }
 
     @Override
-    public void codeAutomatic() {
+    public CodeConfigurationResultDTO codeAutomatic() 
+            throws MachineNotLoadedException, InvalidConfigurationException {
         if (machine == null || abc == null) {
-            System.out.println("Error: No machine loaded. Please load an XML file first (command 1).");
-            return;
+            throw new MachineNotLoadedException();
         }
 
         AutomaticCodeConfigurator configurator = new AutomaticCodeConfigurator(
                 machine, xmlLoader, abc, totalRotors, totalReflectors);
-        boolean success = configurator.configure();
         
-        // Set originalCode the first time a code is successfully configured
-        if (success && machine instanceof MachineImpl machineImpl) {
-            Code currentCode= machineImpl.getCode();
+        configurator.configure();
+        
+        // Update original code after successful configuration
+        if (machine instanceof MachineImpl machineImpl) {
+            Code currentCode = machineImpl.getCode();
             var rotors = currentCode.getRotors();
             var reflector = currentCode.getReflector();
-            var positions = new java.util.ArrayList<Integer>();
+            var positions = new ArrayList<Integer>();
             for (var rotor : rotors) {
                 positions.add(rotor.getPosition());
             }
             this.originalCode = new CodeImpl(rotors, positions, reflector);
             this.originalCodeString = dataFormatter.formatCode(currentCode, machineImpl);
-
+            
+            return CodeConfigurationResultDTO.success(originalCodeString);
         }
+        
+        throw new InvalidConfigurationException("Failed to retrieve configuration after setup");
     }
 
     @Override
-    public String process(String input) {
-        // Validate machine is loaded
+    public String process(String input) throws MachineNotLoadedException, CodeNotConfiguredException, InvalidInputException {
         if (machine == null) {
-            throw new IllegalStateException("No machine loaded. Please load an XML file first (command 1).");
+            throw new MachineNotLoadedException();
         }
 
-        // Validate code is configured
         if (originalCodeString == null) {
-            throw new IllegalStateException("No code configured. Please configure a code first (command 3 or 4).");
+            throw new CodeNotConfiguredException();
         }
 
-        // Validate input is not null or empty
         if (input == null || input.isEmpty()) {
-            throw new IllegalArgumentException("Input cannot be empty.");
+            throw new InvalidInputException("Input cannot be empty.");
         }
 
         // Validate all characters are in ABC
         for (int i = 0; i < input.length(); i++) {
             char c = input.charAt(i);
             if (abc.indexOf(c) == -1) {
-                throw new IllegalArgumentException("Invalid character '" + c + 
+                throw new InvalidInputException("Invalid character '" + c + 
                         "' at position " + (i + 1) + ". Character is not in the ABC: " + abc);
             }
         }
@@ -165,62 +188,50 @@ public class EngineImpl implements Engine{
         history.computeIfAbsent(codeKey, k -> new ArrayList<>())
                 .add(new HistoryEntry(input, output, duration));
 
-
-
-        return new String(result);
-
+        return output;
     }
 
     @Override
-    public void statistics() {
+    public StatisticsDTO statistics() throws MachineNotLoadedException, CodeNotConfiguredException {
         if (machine == null) {
-            System.out.println("Error: No machine loaded. Please load an XML file first (command 1).");
-            return;
+            throw new MachineNotLoadedException();
         }
 
         if (originalCodeString == null) {
-            System.out.println("No code configured. Please configure a code first (command 3 or 4).");
-            return;
+            throw new CodeNotConfiguredException();
         }
 
-        if (history.isEmpty()) {
-            System.out.println("No history available yet.");
-            return;
-        }
+        StatisticsDTO statisticsDTO = new StatisticsDTO();
 
-        int index = 1;
         for (Map.Entry<String, List<HistoryEntry>> entry : history.entrySet()) {
             String code = entry.getKey();
             List<HistoryEntry> entries = entry.getValue();
 
-            System.out.println("Code configuration: " + code);
             for (HistoryEntry h : entries) {
-                System.out.printf(
-                        "%d. <%s> --> <%s> (%d nano-seconds)%n",
-                        index++,
-                        h.getInput(),
-                        h.getOutput(),
-                        h.getDurationNanos()
+                ProcessingEntryDTO processingEntry = new ProcessingEntryDTO(
+                    h.getInput(),
+                    h.getOutput(),
+                    h.getDurationNanos()
                 );
+                statisticsDTO.addEntry(code, processingEntry);
             }
-            System.out.println();
         }
 
-
+        return statisticsDTO;
     }
 
     @Override
-    public void resetCurrentCode() {
+    public void resetCurrentCode() throws MachineNotLoadedException, CodeNotConfiguredException {
         if (machine == null) {
-            throw new IllegalStateException("No machine loaded. Please load an XML file first (command 1).");
+            throw new MachineNotLoadedException();
         }
 
         if (originalCode == null) {
-            throw new IllegalStateException("No original code configured. Please configure a code first (command 3 or 4).");
+            throw new CodeNotConfiguredException("No original code configured. Please configure a code first (command 3 or 4).");
         }
 
         if (!(machine instanceof MachineImpl machineImpl)) {
-            throw new IllegalStateException("Machine is not a valid MachineImpl instance.");
+            throw new MachineNotLoadedException("Machine is not a valid MachineImpl instance.");
         }
 
         machineImpl.setCode(originalCode);
