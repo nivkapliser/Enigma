@@ -77,7 +77,7 @@ public class MenuDisplay {
     }
 
     public void displayProcessingResult(String result) {
-        System.out.println("Processed text: " + result);
+        System.out.println("Processed text: " + result.toUpperCase());
     }
 
     public void displayAvailableRotors(int totalRotors) {
