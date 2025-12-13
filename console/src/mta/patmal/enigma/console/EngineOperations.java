@@ -14,6 +14,8 @@ public class EngineOperations {
     private final Engine engine;
     private final MenuDisplay display;
     private final InputCollector input;
+    private boolean loadedXml = false;
+    private boolean codeConfigured = false;
 
     public EngineOperations(Engine engine, MenuDisplay display, InputCollector input) {
         this.engine = engine;
@@ -27,6 +29,7 @@ public class EngineOperations {
         try {
             engine.loadXml(path);
             display.displaySuccess("XML file loaded successfully!");
+            loadedXml = true;
         } catch (XmlLoadException e) {
             display.displayError(e.getMessage());
         }
@@ -79,6 +82,7 @@ public class EngineOperations {
             if (result.isSuccess()) {
                 display.displaySuccess(result.getMessage());
                 display.displaySuccess("Configuration: " + result.getFormattedCode());
+                codeConfigured = true;
             } else {
                 display.displayError(result.getMessage());
             }
@@ -95,6 +99,7 @@ public class EngineOperations {
             if (result.isSuccess()) {
                 display.displaySuccess(result.getMessage());
                 display.displaySuccess("Configuration: " + result.getFormattedCode());
+                codeConfigured = true;
             } else {
                 display.displayError(result.getMessage());
             }
@@ -105,6 +110,14 @@ public class EngineOperations {
     }
 
     public void handleProcess() {
+        if (!loadedXml) {
+            display.displayError("No machine loaded. Please load an XML file first (command 1).");
+            return;
+        }
+        if (!codeConfigured) {
+            display.displayError("No code configured. Please configure a code first (command 3 or 4).");
+            return;
+        }
         String text = input.getText();
         
         try {
@@ -133,3 +146,4 @@ public class EngineOperations {
         }
     }
 }
+

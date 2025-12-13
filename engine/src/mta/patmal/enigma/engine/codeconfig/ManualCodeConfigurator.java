@@ -41,6 +41,10 @@ public class ManualCodeConfigurator {
             throw new InvalidConfigurationException("Rotor IDs cannot be empty. Please provide " + REQUIRED_ROTOR_COUNT + " rotor IDs.");
         }
 
+        if (rotorIds.size() != rotorIds.stream().distinct().count()) {
+            throw new InvalidConfigurationException("Each rotor can only be selected once. Please try again.");
+        }
+
         if (rotorIds.size() != REQUIRED_ROTOR_COUNT) {
             throw new InvalidConfigurationException("Expected exactly " + REQUIRED_ROTOR_COUNT + 
                     " rotor IDs, but got " + rotorIds.size() + ". Please provide " + REQUIRED_ROTOR_COUNT + " rotor IDs.");
